@@ -1,0 +1,163 @@
+{%- comment -%}
+  Renders product gallery navigation buttons
+  Usage:
+  {% render 'product-gallery-navigation' %}
+{%- endcomment -%}
+
+<div class="product-gallery-nav">
+  <button 
+    type="button" 
+    class="slider-button slider-button--prev gallery-nav-button" 
+    style="transform: rotate(180deg);"
+    name="previous" 
+    aria-label="{{ 'general.slider.previous_slide' | t }}"
+  >
+    <span class="svg-wrapper">
+      {{- 'icon-caret.svg' | inline_asset_content -}}
+    </span>
+  </button>
+  <button 
+    type="button" 
+    class="slider-button slider-button--next gallery-nav-button" 
+    name="next" 
+    aria-label="{{ 'general.slider.next_slide' | t }}"
+  >
+    <span class="svg-wrapper">
+      {{- 'icon-caret.svg' | inline_asset_content -}}
+    </span>
+  </button>
+</div>
+
+<style>
+  .product-gallery-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+  }
+
+  .gallery-nav-button {
+    width: 23px;
+    height: 23px;
+    border-radius: 0;
+    background: transparent !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    transition: none;
+    padding: 0;
+  }
+
+  .gallery-nav-button:hover {
+    opacity: 1;
+    background: transparent !important;
+  }
+
+  .gallery-nav-button:focus {
+    outline: none;
+    box-shadow: none;
+    background: transparent !important;
+  }
+  
+  .gallery-nav-button[disabled] {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .gallery-nav-button .svg-wrapper {
+    display: inline-flex;
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const galleryViewer = document.querySelector('.gallery-viewer');
+    if (!galleryViewer) return;
+    
+    const mediaItems = galleryViewer.querySelectorAll('.product__media-item');
+    const totalSlides = mediaItems.length;
+    const prevButton = document.querySelector('.gallery-nav-button[name="previous"]');
+    const nextButton = document.querySelector('.gallery-nav-button[name="next"]');
+    
+    if (!prevButton || !nextButton) return;
+    
+    // Function to update button states based on current slide
+    function updateButtonState(currentIndex) {
+      // Disable previous button on first slide
+      prevButton.disabled = currentIndex === 0;
+      
+      // Disable next button on last slide
+      nextButton.disabled = currentIndex === totalSlides - 1;
+    }
+    
+    // Find current active slide index
+    function getCurrentIndex() {
+      let activeIndex = 0;
+      mediaItems.forEach((item, index) => {
+        if (window.getComputedStyle(item).display !== 'none') {
+          activeIndex = index;
+        }
+      });
+      return activeIndex;
+    }
+    
+    // Initialize button states
+    updateButtonState(getCurrentIndex());
+    
+    // Function to update the active media item
+    function updateActiveMedia(direction) {
+      // Find the currently active media item
+      let activeIndex = getCurrentIndex();
+      
+      // Calculate the next index
+      let nextIndex;
+      if (direction === 'next') {
+        nextIndex = Math.min(activeIndex + 1, totalSlides - 1);
+      } else {
+        nextIndex = Math.max(activeIndex - 1, 0);
+      }
+      
+      // Update display
+      mediaItems.forEach((item, index) => {
+        if (index === nextIndex) {
+          item.style.display = 'block';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+      
+      // Update button states
+      updateButtonState(nextIndex);
+      
+      // Update thumbnails visibility (if applicable)
+      const activeMediaId = mediaItems[nextIndex].dataset.mediaId;
+      updateThumbnailsVisibility(activeMediaId);
+    }
+    
+    // Function to update thumbnail visibility
+    function updateThumbnailsVisibility(activeMediaId) {
+      const thumbnailSlider = document.querySelector('.thumbnail-slider');
+      if (!thumbnailSlider) return;
+      
+      const thumbnails = thumbnailSlider.querySelectorAll('.slider__slide');
+      thumbnails.forEach(thumb => {
+        if (thumb.getAttribute('data-target') === `ProductMedia-${activeMediaId}`) {
+          thumb.style.display = 'none';
+        } else {
+          thumb.style.display = 'block';
+        }
+      });
+    }
+    
+    // Add click handlers to buttons
+    prevButton.addEventListener('click', function() {
+      updateActiveMedia('prev');
+    });
+    
+    nextButton.addEventListener('click', function() {
+      updateActiveMedia('next');
+    });
+  });
+</script>

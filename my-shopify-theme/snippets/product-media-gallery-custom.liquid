@@ -1,0 +1,147 @@
+{%- comment -%}
+  Renders a product media gallery with thumbnails that hide the currently active image
+  Usage:
+  {% render 'product-media-gallery-custom' %}
+{%- endcomment -%}
+
+<script src="{{ 'product-gallery.js' | asset_url }}" defer></script>
+<script src="{{ 'product-gallery-navigation.js' | asset_url }}" defer></script>
+
+<div class="product__media-wrapper">
+  <div class="media-gallery">
+    <div class="thumbnail-slider">
+      {%- for media in product.media -%}
+        <div class="slider__slide" data-target="ProductMedia-{{ media.id }}" data-index="{{ forloop.index0 }}">
+          <img
+            src="{{ media.preview_image | image_url: width: 100 }}"
+            srcset="
+              {{ media.preview_image | image_url: width: 100 }} 100w,
+              {{ media.preview_image | image_url: width: 200 }} 200w,
+              {{ media.preview_image | image_url: width: 350 }} 350w,
+              {{ media.preview_image | image_url: width: 500 }} 500w
+            "
+            alt="{{ media.alt | escape }}"
+            width="100"
+            height="100"
+            class="thumbnail__image{% if forloop.first %} mobile-selected{% endif %}"
+            loading="lazy"
+          >
+          
+        </div>
+      {%- endfor -%}
+    </div>
+    
+    <!-- Only visible in mobile view: navigation dots -->
+    <div class="mobile-gallery-dots">
+      {%- for media in product.media -%}
+        <div class="mobile-gallery-dot{% if forloop.first %} active{% endif %}" data-index="{{ forloop.index0 }}"></div>
+      {%- endfor -%}
+    </div>
+    
+    <div class="gallery-viewer">
+      {%- for media in product.media -%}
+        <div 
+          class="product__media-item{% if forloop.first %} is-active{% endif %}" 
+          data-media-id="{{ media.id }}"
+          style="{% unless forloop.first %}display: none;{% endunless %}"
+        >
+          <img 
+            src="{{ media.preview_image | image_url: width: 480 }}" 
+            srcset="
+              {{ media.preview_image | image_url: width: 480 }} 480w,
+              {{ media.preview_image | image_url: width: 720 }} 720w,
+              {{ media.preview_image | image_url: width: 960 }} 960w,
+              {{ media.preview_image | image_url: width: 1200 }} 1200w
+            "
+            alt="{{ media.alt | escape }}" 
+            width="{{ media.width }}" 
+            height="{{ media.height }}" 
+            loading="lazy" 
+            sizes="(min-width: 1100px) 480px, (min-width: 750px) calc((100vw - 11.5rem) / 2), calc(100vw - 4rem)"
+            class="product__media-image"
+          >
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</div>
+
+<script>
+  // Add mobile-specific functionality for the thumbnails
+  document.addEventListener('DOMContentLoaded', function() {
+    const thumbnailSlides = document.querySelectorAll('.thumbnail-slider .slider__slide');
+    const mobileDots = document.querySelectorAll('.mobile-gallery-dot');
+    const isMobile = window.innerWidth < 750;
+    
+    // Function to update active state
+    function updateActiveSlide(index) {
+      // Hide all full-size images
+      thumbnailSlides.forEach(s => {
+        const img = s.querySelector('.mobile-fullsize-image');
+        if (img) img.style.display = 'none';
+        s.classList.remove('active-mobile-thumbnail');
+      });
+      
+      // Update dots
+      mobileDots.forEach(dot => {
+        dot.classList.remove('active');
+      });
+      
+      // Show the selected image
+      const selectedSlide = document.querySelector(`.slider__slide[data-index="${index}"]`);
+      if (selectedSlide) {
+        const fullsizeImage = selectedSlide.querySelector('.mobile-fullsize-image');
+        if (fullsizeImage) fullsizeImage.style.display = 'block';
+        selectedSlide.classList.add('active-mobile-thumbnail');
+        
+        // Scroll the thumbnail into view (for mobile)
+        if (isMobile) {
+          selectedSlide.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+        
+        // Update dot
+        const selectedDot = document.querySelector(`.mobile-gallery-dot[data-index="${index}"]`);
+        if (selectedDot) selectedDot.classList.add('active');
+      }
+    }
+    
+    // Add click handlers to thumbnails
+    thumbnailSlides.forEach((slide) => {
+      slide.addEventListener('click', function() {
+        const index = this.getAttribute('data-index');
+        if (index !== null) {
+          updateActiveSlide(index);
+        }
+      });
+    });
+    
+    // Add click handlers to dots (mobile only)
+    mobileDots.forEach((dot) => {
+      dot.addEventListener('click', function() {
+        const index = this.getAttribute('data-index');
+        if (index !== null) {
+          updateActiveSlide(index);
+        }
+      });
+    });
+    
+    // Handle window resize events to adjust behavior
+    window.addEventListener('resize', function() {
+      const newIsMobile = window.innerWidth < 750;
+      
+      // If switching to mobile mode, ensure all thumbnails are visible
+      if (newIsMobile && !isMobile) {
+        thumbnailSlides.forEach(slide => {
+          slide.style.display = 'block';
+        });
+      }
+    });
+    
+    // Make sure all thumbnails are shown in mobile view
+    if (isMobile) {
+      thumbnailSlides.forEach(slide => {
+        slide.style.display = 'block';
+      });
+    }
+  });
+</script>
